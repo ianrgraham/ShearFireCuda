@@ -65,7 +65,7 @@ __device__ void calc_harm_force(dbl2 &force, particle *p, int i, int j, dbl LEsh
     else if (yt < -.5) yt += 1.0;
     //float mag = sqrtf((xt)*(xt)+(yt)*(yt));
     //might not need mag, wait nvm I need that
-    dbl mag = sqrtf((xt)*(xt)+(yt)*(yt));
+    dbl mag = sqrt((xt)*(xt)+(yt)*(yt));
     dbl forcemag = (mag - (p[i].z + p[j].z));
     tmpforce.x = xt*forcemag/mag;
     tmpforce.y = yt*forcemag/mag;
