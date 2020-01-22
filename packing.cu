@@ -25,10 +25,14 @@
 #define PI 3.141592653
 #define PREC 20
 #define maxNeighbors 6
-//typedef double4 particle;
-//typedef double dbl;
-typedef float4 particle;
-typedef float dbl;
+typedef double4 particle;
+typedef double dbl;
+typedef double3 dbl3;
+typedef double2 dbl2;
+//typedef float4 particle;
+//typedef float2 dbl2;
+//typedef float3 dbl3;
+//typedef float dbl;
 
 using namespace std;
 
@@ -50,19 +54,19 @@ string_code hashit (string const& inString) {
     else return enone;
 }
 
-__device__ void calc_harm_force(float2 &force, particle *p, int i, int j, dbl LEshear) {
+__device__ void calc_harm_force(dbl2 &force, particle *p, int i, int j, dbl LEshear) {
     //float2 tmp(0.0f,0.0f);
-    float2 tmpforce;
-    float xt = p[i].x-p[j].x;
-    float yt = p[i].y-p[j].y;
+    dbl2 tmpforce;
+    dbl xt = p[i].x-p[j].x;
+    dbl yt = p[i].y-p[j].y;
     if (xt > .5) {xt -= 1.0; yt -= LEshear;}
     else if (xt < -.5) {xt += 1.0; yt += LEshear;}
     if (yt > .5) yt -= 1.0;
     else if (yt < -.5) yt += 1.0;
     //float mag = sqrtf((xt)*(xt)+(yt)*(yt));
     //might not need mag, wait nvm I need that
-    float mag = sqrtf((xt)*(xt)+(yt)*(yt));
-    float forcemag = (mag - (p[i].z + p[j].z));
+    dbl mag = sqrtf((xt)*(xt)+(yt)*(yt));
+    dbl forcemag = (mag - (p[i].z + p[j].z));
     tmpforce.x = xt*forcemag/mag;
     tmpforce.y = yt*forcemag/mag;
     force.x += tmpforce.x;
@@ -70,7 +74,7 @@ __device__ void calc_harm_force(float2 &force, particle *p, int i, int j, dbl LE
     return;
 }
 
-__device__ void step(particle *parts, float2 move, int i) {
+__device__ void step(particle *parts, dbl2 move, int i) {
     parts[i].x += move.x;
     parts[i].y += move.y;
     return;
@@ -79,7 +83,7 @@ __device__ void step(particle *parts, float2 move, int i) {
 template<int N>
 __global__ void minimization_step(particle *parts, int neighbors[N][maxNeighbors], dbl LEshear) {
     int i = blockIdx.x * blockDim.x + threadIdx.x;
-    float2 force = make_float2(0,0);
+    dbl2 force = make_double2(0,0);// make_float2(0,0);
     for (int j=0; j < maxNeighbors; j++) {
         if (neighbors[i][j] == -1) break;
         calc_harm_force(force, parts, i, j, LEshear);
@@ -196,7 +200,7 @@ public:
         // allocate memory
         particle *dev_parts = 0;
         int dev_neighbors[N][maxNeighbors] {{0}};
-        float *dev_LEshear;
+        dbl *dev_LEshear;
 
         cudaSetDevice(0);
         const clock_t begin_time = clock();
@@ -211,7 +215,7 @@ public:
         // copy back to host
         cudaDeviceSynchronize();
         cudaMemcpy(parts, dev_parts, N * sizeof(particle), cudaMemcpyDeviceToHost);
-        std::cout << "BLAHHH " << float( clock () - begin_time ) /  CLOCKS_PER_SEC << endl; 
+        std::cout << endl << "BLAHHH " << float( clock () - begin_time ) /  CLOCKS_PER_SEC << endl; 
         cudaFree(dev_parts);
         cudaFree(dev_neighbors);
     }
@@ -254,7 +258,7 @@ public:
     }
 
     int find_neighbors(int neighbors[N][maxNeighbors]) {
-        float3 tmp;
+        dbl3 tmp;
         int c[N] = {0};
         int max;
         dbl xdim = .5*boxsize[0];
