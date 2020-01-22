@@ -25,6 +25,7 @@
 #define PI 3.141592653
 #define PREC 20
 #define maxNeighbors 6
+#define maxNeighbors 6
 typedef double4 particle;
 typedef double dbl;
 typedef double3 dbl3;
@@ -91,11 +92,40 @@ __global__ void minimization_step(particle *parts, int neighbors[N][maxNeighbors
     step(parts, force, i);
     return;
 }
+/*
+I need to think about the best way to plan the computation
+My current idea is to group n nearby particles onto a thread block and then distribute a similar number of contacts in each grouping
+That way I can assign each thread the same number of bonds to work on
+And I can arrange the bonds so that bank conflicts can be avoided
+
+I probably also don't have to check for neighbor changes after each minimization step
+Maybe every 100 steps?
+If contacts change, I revert to the prior saved configuration and continue but check for neighbors at every step?
+*/
+
+template<int N>
+__global__ void cooperative_minimization(particle *parts, int neighbors[N][maxNeighbors], dbl LEshear) {
+    bool condition; // this is the condition to continue the minimization procedure
+    while (condition) {
+        // this is something of what the control flow should be
+        
+        // 1. Check neighbor (and next-nearest neighbor) list for contacts (or lack there of)
+        // sync grid group
+        // 2. If neighbors change, the computation plan needs to be updated to optimize throughput
+        // sync grid group
+        // 3. Calculate the new force on each particle from its neighbors
+        // sync grid group
+        // 4. Update particle positions based upon force, unless 
+        //     the force is small enough to consider the minimization complete
+        // sync grid group
+    }
+    return;
+}
 
 //template<int N>
-__global__ void LEShift(particle *parts, dbl LEShift) {
+__global__ void LEShift(particle *parts, dbl LEshear) {
     int i = blockIdx.x * blockDim.x + threadIdx.x;
-    parts[i].y = parts[i].y + parts[i].x*LEShift;
+    parts[i].y = parts[i].y + parts[i].x*LEshear;
     return;
 }
 
